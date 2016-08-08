@@ -34,7 +34,6 @@ int main()
       for(unsigned i=0;i<output_vect[n].size();i++)
 	{
 	  output_vect[n][i]=-1.+(double)n*2./N_GEST; //1-2.*(double)rand()/RAND_MAX;
-	  cout<<output_vect[n][i]<<endl;
 	}
     }
 
