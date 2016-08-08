@@ -8,7 +8,6 @@
 
 using namespace std;
 
-#define N_SIM 100 // no. of loops
 #define N_GEST 10 // no. of gestures to simulate
 #define N_INPUT 5 // no. of sensor values
 #define N_OUTPUT 1 // no. of outputs
@@ -37,23 +36,20 @@ int main()
 	}
     }
 
-  for(unsigned sim=0;sim<N_SIM;sim++)
+  for(unsigned n=0;n<N_GEST;n++)
     {
-      for(unsigned n=0;n<N_GEST;n++)
+      f<<"{ ";
+      for(unsigned i=0;i<N_INPUT;i++)
 	{
-	  f<<"{ ";
-	  for(unsigned i=0;i<N_INPUT;i++)
-	    {
-	      f << setprecision(2) << fixed << input_vect[n][i] << " ";
-	    }
+	  f << setprecision(2) << fixed << input_vect[n][i] << " ";
+	}
 	  f<<"} ";
 	  for(unsigned i=0;i<N_OUTPUT;i++)
 	    {
 	      f << setprecision(2) << fixed << output_vect[n][i] << " ";
 	    }
 	  f << "\n";
-	}
     }
-
+  
   return 0;
 }
