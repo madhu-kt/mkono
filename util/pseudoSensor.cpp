@@ -8,8 +8,9 @@
 
 using namespace std;
 
+#define N_SIM 100
 #define N_GEST 10 // no. of gestures to simulate
-#define N_INPUT 5 // no. of sensor values
+#define N_INPUT 5*5 // no. of sensor values * no. of time-intervals
 #define N_OUTPUT 1 // no. of outputs
 int main()
 {
@@ -35,21 +36,22 @@ int main()
 	  output_vect[n][i]=-1.+(double)n*2./N_GEST; //1-2.*(double)rand()/RAND_MAX;
 	}
     }
-
-  for(unsigned n=0;n<N_GEST;n++)
+  for(unsigned sim=0;sim<N_SIM;sim++)
     {
-      f<<"{ ";
-      for(unsigned i=0;i<N_INPUT;i++)
+      for(unsigned n=0;n<N_GEST;n++)
 	{
-	  f << setprecision(2) << fixed << input_vect[n][i] << " ";
-	}
+	  f<<"{ ";
+	  for(unsigned i=0;i<N_INPUT;i++)
+	    {
+	      f << setprecision(2) << fixed << input_vect[n][i] << " ";
+	    }
 	  f<<"} ";
 	  for(unsigned i=0;i<N_OUTPUT;i++)
 	    {
 	      f << setprecision(2) << fixed << output_vect[n][i] << " ";
 	    }
 	  f << "\n";
+	}
     }
-  
   return 0;
 }
