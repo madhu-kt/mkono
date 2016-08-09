@@ -1,0 +1,131 @@
+<html>
+
+<head>
+	System status: <span id="status"></span></br>
+	<!-- <p id="time"></p> !-->
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" type="text/javascript" charset="utf-8">
+	</script>
+	<button id="btnCalibrate" onclick=calibrate()>Calibrate sensors</button><br>
+</head>
+
+<body>
+	<script type="text/javascript">
+	//your javascript goes here
+	
+	var activeVar = setInterval(activeTimer, 1000);
+	//function that queries Particle variable every second
+	function activeTimer() {
+		document.getElementById("pic1").style.border = "thick solid #ffffff"
+		document.getElementById("pic2").style.border = "thick solid #ffffff"
+		document.getElementById("pic3").style.border = "thick solid #ffffff"
+		document.getElementById("pic4").style.border = "thick solid #ffffff"
+		document.getElementById("pic5").style.border = "thick solid #ffffff"
+		var requestURL = "https://api.particle.io/v1/devices/270029000647343138333038/sysState?access_token=c3fddb5edd23aead87aac92f79cbf96f8c1b456a";
+		$.getJSON(requestURL, function(json) {
+			var sysState = json.result;
+			document.getElementById("status").innerHTML = sysState;
+			console.log(sysState);
+			var n=0;
+			if(!isNaN(sysState)) n=Math.round(sysState*10);
+			if(n>0)
+			{
+				var picStr = "pic"+n;
+				document.getElementById(picStr).style.border = "thick solid #16EB2B";
+			}
+		})
+	}
+	
+	/*
+	var timeVar = setInterval(timeTimer, 1000);
+
+	function timeTimer() {
+		var d = new Date();
+		document.getElementById("time").innerHTML = d.toLocaleTimeString();
+	}
+	*/
+	function calibrate()
+	{
+		//tell photon to start calibration
+		
+		//activate btnTrain
+		document.getElementById("btnTrain").disabled = false;
+		
+		var requestURL = "https://api.particle.io/v1/devices/270029000647343138333038/startCalib?access_token=c3fddb5edd23aead87aac92f79cbf96f8c1b456a";
+		//2. POST string to the cloud
+		
+		var xhr = new XMLHttpRequest();
+		myString="web_calibrate";
+		xhr.open("POST", requestURL, true);		
+		//Send the proper header information along with the request
+		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xhr.send("myString="+myString);
+		xhr.onload = function () {
+			// do something to response
+			console.log(this.responseText);
+		}
+	}
+	
+	function train()
+	{		
+		//1. select gesture to train
+		//2. send gestureID to Photon
+		var radios = document.getElementsByName('args');
+		var myString;
+		for (var i = 0, length = radios.length; i < length; i++) 
+		{
+			if (radios[i].checked) 
+			{
+				myString = i+1;
+				break;
+			}
+		}
+		console.log(myString);
+		var requestURL = "https://api.particle.io/v1/devices/270029000647343138333038/startTrain?access_token=c3fddb5edd23aead87aac92f79cbf96f8c1b456a";
+		//2. POST string to the cloud
+		
+		var xhr = new XMLHttpRequest();
+		
+		xhr.open("POST", requestURL, true);		
+		//Send the proper header information along with the request
+		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xhr.send("myString="+myString);
+		xhr.onload = function () {
+			// do something to response
+			console.log(this.responseText);
+		}
+		//activate btnActive
+		document.getElementById("btnActive").disabled = false;
+	}
+	function activ8()
+	{	
+		
+		var myString = "web_activ8";
+		var requestURL = "https://api.particle.io/v1/devices/270029000647343138333038/startActive?access_token=c3fddb5edd23aead87aac92f79cbf96f8c1b456a";
+		//2. POST string to the cloud
+		
+		var xhr = new XMLHttpRequest();
+		
+		xhr.open("POST", requestURL, true);		
+		//Send the proper header information along with the request
+		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xhr.send("myString="+myString);
+		xhr.onload = function () {
+			// do something to response
+			console.log(this.responseText);
+		}
+	}
+	</script>
+	
+	<form>
+	<input type="radio" name="args" value="1" checked> <img src="pictures/one.PNG" id="pic1">
+	<input type="radio" name="args" value="2" /> <img src="pictures/two.PNG" id="pic2">
+	<input type="radio" name="args" value="3" /> <img src="pictures/three.PNG" id="pic3">
+	<input type="radio" name="args" value="4" /> <img src="pictures/four.PNG" id="pic4">
+	<input type="radio" name="args" value="5" /> <img src="pictures/five.PNG" id="pic5"><br>
+	<!--How many times would you like to train? 
+	<input type="text" name="args"><br> --->
+	</form>
+	<button id="btnTrain" onclick=train() disabled>Train Now!</button> <button id="btnActive" onclick=activ8() disabled>Start Active Mode!</button><br>
+	<a href="linker.html">Go to linker...</a>
+</body>
+</html>

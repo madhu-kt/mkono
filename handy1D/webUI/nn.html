@@ -1,0 +1,55 @@
+<html>
+
+<head>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" type="text/javascript" charset="utf-8">
+	</script>
+</head>
+
+<body>
+	<script type="text/javascript">
+	//your javascript goes here
+	function train()
+	{
+		
+		//1. select gesture to train
+		//2. send gestureID to Photon
+		var radios = document.getElementsByName('args');
+		var myString;
+		for (var i = 0, length = radios.length; i < length; i++) 
+		{
+			if (radios[i].checked) 
+			{
+				myString = i+1;
+				break;
+			}
+		}
+		console.log(myString);
+		var requestURL = "https://api.particle.io/v1/devices/270029000647343138333038/startTrain?access_token=c3fddb5edd23aead87aac92f79cbf96f8c1b456a";
+		//2. POST string to the cloud
+		
+		var xhr = new XMLHttpRequest();
+		
+		xhr.open("POST", requestURL, true);		
+		//Send the proper header information along with the request
+		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xhr.send("myString="+myString);
+		xhr.onload = function () {
+			// do something to response
+			console.log(this.responseText);
+		};
+	}
+	</script>
+	
+	<form>
+	<input type="radio" name="args" value="1" checked> <img src="pictures/one.PNG">
+	<input type="radio" name="args" value="2" /> <img src="pictures/two.PNG">
+	<input type="radio" name="args" value="3" /> <img src="pictures/three.PNG">
+	<input type="radio" name="args" value="4" /> <img src="pictures/four.PNG">
+	<input type="radio" name="args" value="5" /> <img src="pictures/five.PNG"><br>
+	<!--How many times would you like to train? 
+	<input type="text" name="args"><br> --->
+	</form>
+	<button id="btnTrain" onclick=train()>Train Now!</button><br>
+	<a href="linker.html">Go to linker...</a>
+</body>
+</html>
