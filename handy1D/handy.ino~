@@ -5,17 +5,14 @@
 
 using namespace std;
 
-//#define DEBUG
-
-#define N_SMOOTHING_SAMPLES 100
-#define N_MAX_TRIALS 10000
-#define N_TRAINING_SAMPLES 100
+#define N_SMOOTHING_SAMPLES 4
+#define N_MAX_TRIALS 100000
+#define N_TRAINING_SAMPLES 4
 #define OUTPUT_SCALER 10.0
 
 #define REST_ADC 200.0
 #define N_SENSORS 5
-#define LOGGING_WAIT_TIME 100 //ms
-#define ACTIVE_LOGGING_TIME 1000 //ms
+#define LOGGING_WAIT_TIME 1000 //ms
 #define CALIBRATION_TIME 100 //ms
 #define WAIT_TIME 3000 //ms
 
@@ -322,25 +319,6 @@ double getStDev(vector<double> data, double &mean)
     return sqrt(sum_deviation/data.size());    
 }
 
-void shuffleVectors(vector<vector<double> > &v1, vector<vector<double> > &v2)
-{
-    /*
-    FOR i = n-1 TO 1 REPEAT the following two lines:
-j = a pseudo-random integer from the interval 0 <= j <= i
-exchange a[i] and a[j]
-*/
-    for(int i=v1.size()-1; i>0; i--)
-    {
-        int j = random(i);
-        vector<double> temp1 = v1[i];
-        vector<double> temp2 = v2[i];
-        v1[i]=v1[j];
-        v1[j]=temp1;
-        v2[i]=v2[j];
-        v2[j]=temp2;
-    }
-}
-
 vector<unsigned> topology;
 vector<double> targetVals, inputVals, resultVals;
 vector< vector<double> > targetSet;
@@ -354,12 +332,12 @@ void pleaseWait(void);
 Timer timerWait(WAIT_TIME, pleaseWait);
 
 void readTrain(void);
-//setup a timer that gets sensor data after x seconds
+//setup a timer that gets sensor data after 1 second
 Timer timerTrain(LOGGING_WAIT_TIME, readTrain);
 
 void readActive(void);
-//setup a timer that gets sensor data every x seconds
-Timer timerActive(ACTIVE_LOGGING_TIME, readActive);
+//setup a timer that gets sensor data every 1 second
+Timer timerActive(LOGGING_WAIT_TIME, readActive);
 
 double activeVal = 0.;
 String sysState = 0;
@@ -395,18 +373,12 @@ bool state = LOW;
 String calibStr;
 int startCalib(String str)
 {
-    //#ifndef DEBUG
-    
     //toggle LED
     ledState=!ledState;
     digitalWrite(D7,ledState);
     sysState = "lo calib...";
+    
     timerCalibs.start();
-    
-    //#else
-    //sysState = "debug";
-    //#endif
-    
     return 1;
 }
 
@@ -440,16 +412,9 @@ int startActive(String str)
 
 volatile bool activateActive = LOW;
 vector<double> rawVals[N_SENSORS]; //array of 5 vectors
-
-//#ifdef DEBUG
-//double calibrations[2][N_SENSORS]={{0},{4095}};
-//#else
 double calibrations[2][N_SENSORS]={{0},{0}};
-//#endif
-
 double stdevs[2][N_SENSORS]={{0},{0}};
 volatile int calibCount=0;
-
 void readCalibs(void)
 {
     ++calibCount; //keep track of how many times the sensors are sampled
@@ -515,12 +480,12 @@ void readCalibs(void)
         ledState=!ledState;
         digitalWrite(D7,ledState);
         sysState = "calib done!";
-        Serial.println("calibration done!");
+        /*
         String s=String(calibrations[1][0])+" "+String(calibrations[1][1])+" "+String(calibrations[1][2])+" "+String(calibrations[1][3])+" "+String(calibrations[1][4]);
         Particle.publish(s);
         s=String(stdevs[1][0])+" "+String(stdevs[1][1])+" "+String(stdevs[1][2])+" "+String(stdevs[1][3])+" "+String(stdevs[1][4]);
         Particle.publish(s);
-        
+        */
         timerCalibs.stop(); 
     }
     
@@ -538,8 +503,7 @@ void pleaseWait(void)
 
 volatile int readCount=0;
 volatile bool enableActiveMode = false;
-volatile bool fubar = false;
-
+volatile bool fubar = true;
 Net myNet;
 
 void readTrain(void)
@@ -551,43 +515,38 @@ void readTrain(void)
     targetVals.clear();
     //pass in 'normalized' input
     int inputVal[N_SENSORS]={analogRead(sense1Pin),analogRead(sense2Pin),analogRead(sense3Pin),analogRead(sense4Pin),analogRead(sense5Pin)};
-    //'normalize' NN input
+    
+    showVectorVals("Raw: ", inputVals);
+    
+    //'normalization' of NN input
     for(int i=0;i<N_SENSORS;++i)
     {
         if(inputVal[i]<calibrations[1][i] && inputVal[i]>calibrations[0][i])
         {
             inputVals.push_back(map(inputVal[i],calibrations[0][i],calibrations[1][i],0,10000)/10000.0);
         }
-        else if(inputVal[i]<=calibrations[0][i])
+        else if(inputVal[i]<calibrations[0][i])
         {
             inputVals.push_back(0);
         }
-        else if(inputVal[i]>=calibrations[1][i])
+        else if(inputVal[i]>calibrations[1][i])
         {
             inputVals.push_back(1);
-        }
-        else
-        {
-            Serial.println("fubar!! fubar!! mismatch imminent!");
         }
         //inputVals.push_back( (inputVal[i]>calibrations[0][i]) ? (inputVal[i]<calibrations[1][i] ? map(inputVal[i],calibrations[0][i],calibrations[1][i],0,10000)/10000.0 : 1 ) : 0 );
     }
     
-    //NN target
     targetVals.push_back(targetStr.toInt()/OUTPUT_SCALER);
     
     trainingSet.push_back(inputVals);
     targetSet.push_back(targetVals);
-    /*
+
     String s_d = "Added <"+String(trainingSet.back()[0])+" "+String(trainingSet.back()[1])+" "+String(trainingSet.back()[2])+" "+String(trainingSet.back()[3])+" "+String(trainingSet.back()[4])+" to training set.>";
     Serial.println(s_d);
     s_d = "Added <"+String(targetSet.back()[0])+"> to target set.";
     Serial.println(s_d);
-    Serial.printf("train size = %d, target size = %d",trainingSet.size(), targetSet.size());
-    Serial.println();
-    */
     
-    if(readCount==N_TRAINING_SAMPLES-1)
+    if(readCount>N_TRAINING_SAMPLES)
     {
         readCount=0;
         timerTrain.stop();
@@ -601,11 +560,8 @@ void readTrain(void)
         
         myNet = Net(topology);
         
-        unsigned n=0; // number of iterations; increments every loop
-        unsigned passNum=0; //number of passes
+        unsigned n=0;
         
-        //shuffle data
-        shuffleVectors(trainingSet, targetSet);
         do
         {
             unsigned i = n%trainingSet.size();
@@ -615,10 +571,8 @@ void readTrain(void)
         	//showVectorVals("Feeding in: ",trainingSet[i]);
         	// Collect the net's actual output results:
         	myNet.getResults(resultVals);
-            
-            /*
-            Serial.printf("Pass %d :: Round %d",passNum,i);
-            
+            /*  
+            Serial.printf("Pass %d :: Round %d",n,i);
             showVectorVals(": Inputs:", trainingSet[i]);
             showVectorVals("Outputs:", resultVals);
             // Report how well the training is working, average over recent samples:
@@ -628,50 +582,37 @@ void readTrain(void)
         	
         	showVectorVals("Targets:", targetSet[i]);
         	*/
-        	
         	if(targetSet[i].size() != topology.back())
         	{
         	    Serial.println("TARGET VALS & TOPOLOGY MISMATCH");
-        	    fubar = true;
         	    break;
         	}
         	
         	// Tell the net what the outputs should have been:
         	myNet.backProp(targetSet[i]);
         
-        	if(passNum==N_MAX_TRIALS)
+        	if(n==N_MAX_TRIALS)
         	{
         	    Serial.println("Maximum training limit reached. Neural net did not converge :(");
-        	    fubar = true;
         	    break;
         	}
         	++n;
-        	if(i==trainingSet.size()-1)++passNum;
         }
-        while(myNet.getNetError() > 0.0001); //keep looping until error falls below 0.0001 AND no. of passes is at least 1
+        while(myNet.getNetError() > 0.0001);
         
         //toggle LED
         ledState=!ledState;
         digitalWrite(D7,ledState);
-        if(fubar)
-        {
-            sysState = "uh oh";
-            Particle.publish("Training failed!");
-            Serial.println("Training failed");
-        }
-        else
-        {
-            sysState = "done!";
-            Particle.publish("Training complete!");
-            Serial.println("Training complete");
-            enableActiveMode = true;
-        }
+        sysState = "done!";
         
+        Particle.publish("Training complete!");
+        Serial.println("Training complete");
+        enableActiveMode = true;
         //could add a timer that waits about 5 seconds and automatically starts active-mode
     }
     else
     {
-        readCount++;
+        ++readCount;
     }
 }
 
@@ -687,17 +628,13 @@ void readActive(void)
         {
             inputVals.push_back(map(inputVal[i],calibrations[0][i],calibrations[1][i],0,10000)/10000.0);
         }
-        else if(inputVal[i]<=calibrations[0][i])
+        else if(inputVal[i]<calibrations[0][i])
         {
             inputVals.push_back(0);
         }
-        else if(inputVal[i]>=calibrations[1][i])
+        else if(inputVal[i]>calibrations[1][i])
         {
             inputVals.push_back(1);
-        }
-        else
-        {
-            Serial.println("fubar!! fubar!! mismatch imminent!");
         }
         //inputVals.push_back( (inputVal[i]>calibrations[0][i]) ? (inputVal[i]<calibrations[1][i] ? map(inputVal[i],calibrations[0][i],calibrations[1][i],0,10000)/10000.0 : 1 ) : 0 );
     }
@@ -739,6 +676,7 @@ int linkAction(String str)
 /*
 //Debouncing inside ISR
 long lastTrainDebounceTime = 0;
+
 void trainEvent(void)   //this ISR triggers when the train button is pressed. each time you press the switch,
 {
   if ((millis() - lastTrainDebounceTime) > debounceDelay) //if current time minus the last trigger time is greater than
